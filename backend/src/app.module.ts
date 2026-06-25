@@ -22,12 +22,29 @@ import { FinanceModule } from './modules/finance/finance.module';
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
-      useFactory: () => ({
-        type: 'better-sqlite3',
-        database: 'wow_dev.db',
-        autoLoadEntities: true,
-        synchronize: true,
-      }),
+      useFactory: (configService: ConfigService) => {
+        const postgresHost = configService.get<string>('POSTGRES_HOST');
+
+        if (postgresHost) {
+          return {
+            type: 'postgres' as const,
+            host: postgresHost,
+            port: configService.get<number>('POSTGRES_PORT', 5432),
+            username: configService.get<string>('POSTGRES_USER'),
+            password: configService.get<string>('POSTGRES_PASSWORD'),
+            database: configService.get<string>('POSTGRES_DB'),
+            autoLoadEntities: true,
+            synchronize: true,
+          };
+        }
+
+        return {
+          type: 'better-sqlite3' as const,
+          database: 'wow_dev.db',
+          autoLoadEntities: true,
+          synchronize: true,
+        };
+      },
     }),
     AuthModule,
     UsersModule,
